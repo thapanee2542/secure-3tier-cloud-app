@@ -1,0 +1,49 @@
+# ===================================================
+# Terraform Example Configuration
+# ===================================================
+# Copy this file to terraform.tfvars and customize
+# DO NOT commit terraform.tfvars to git
+# ===================================================
+
+# AWS Region
+aws_region = "us-east-1"
+
+# Project naming
+project_name = "secure-3tier-app"
+environment  = "dev"
+
+# VPC Configuration
+vpc_cidr                 = "10.0.0.0/16"
+private_subnet_1_cidr    = "10.0.1.0/24"
+private_subnet_2_cidr    = "10.0.2.0/24"
+enable_nat_gateway       = false  # Not needed for this serverless app
+
+# Lambda Configuration
+lambda_timeout            = 30
+lambda_memory_size        = 256
+lambda_log_retention_days = 7
+
+# S3 & CloudFront
+s3_log_retention_days              = 7
+cloudfront_log_retention_days      = 7
+cloudfront_default_ttl             = 3600
+cloudfront_max_ttl                 = 86400
+
+# DynamoDB
+members_table_billing_mode     = "PAY_PER_REQUEST"  # Cost-optimized
+members_table_stream_specification = false
+
+# API Gateway
+cors_allow_origins      = ["http://localhost:5173", "https://example.com"]
+api_gateway_stage_name  = "prod"
+
+# Monitoring
+enable_detailed_monitoring = false  # Set to true for more CloudWatch metrics
+
+# Tags applied to all resources
+tags = {
+  Project     = "Secure 3-Tier Cloud App"
+  Environment = "development"
+  Terraform   = "true"
+  ManagedBy   = "Terraform"
+}
