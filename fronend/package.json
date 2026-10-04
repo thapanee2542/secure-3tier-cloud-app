@@ -1,0 +1,28 @@
+{
+  "name": "secure-3tier-app-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "postbuild": "node scripts/copy-dist-to-terraform.mjs",
+    "preview": "vite preview",
+    "format:check": "prettier --check src scripts index.html vite.config.js package.json",
+    "format": "prettier --write src scripts index.html vite.config.js package.json"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-pdf": "^9.2.1"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9",
+    "vite": "^6.0.5"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 100
+  }
+}

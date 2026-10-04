@@ -1,0 +1,82 @@
+%% Architecture from declared Terraform resources; not a live AWS inventory.
+flowchart TB
+  visitor["Website visitors"]
+
+  subgraph AWS["AWS account"]
+    direction TB
+
+    subgraph EDGE["Public delivery and API layer"]
+      direction LR
+      cloudfront["Amazon CloudFront<br/>HTTPS viewer; HTTP redirects to HTTPS<br/>Default certificate"]
+      api["Regional API Gateway<br/>GET /members<br/>Authorization: NONE<br/>Throttling: 2 req/s, burst 5"]
+    end
+
+    subgraph VPC["VPC 10.0.0.0/16"]
+      direction TB
+      subgraph PRIVATE["Private subnets; no public IP assignment"]
+        direction LR
+        subnetA["Private subnet A<br/>10.0.1.0/24<br/>Availability Zone 1"]
+        subnetB["Private subnet B<br/>10.0.2.0/24<br/>Availability Zone 2"]
+      end
+      lambda["AWS Lambda: get-members<br/>Python 3.13; 128 MB; 30-second timeout"]
+      lambdaSG["Lambda security group<br/>No inbound rules declared<br/>HTTPS egress only to DynamoDB prefix list"]
+      privateRT["Shared private route table"]
+      ddbEndpoint["DynamoDB Gateway VPC endpoint<br/>Endpoint policy: Lambda execution role<br/>Scan and GetItem on members table"]
+      networkNote["No NAT Gateway or Internet Gateway declared<br/>Configured egress path: DynamoDB endpoint"]
+    end
+
+    s3["Private S3 bucket<br/>Frontend and member images<br/>Public access blocked; AES-256 encryption"]
+    oac["CloudFront Origin Access Control<br/>SigV4 signing"]
+    ddb["Amazon DynamoDB: members-data-table<br/>Server-side encryption enabled<br/>Point-in-time recovery: 1 day"]
+    role["IAM role: lambda-get-members-role<br/>DynamoDB Scan on members table<br/>Lambda VPC access policy"]
+    logs["CloudWatch Logs<br/>/aws/lambda/get-members<br/>Retention: 3 days"]
+
+    subgraph MONITORING["Monitoring and notifications"]
+      direction LR
+      alarms["CloudWatch API alarms<br/>Request count &gt; 300 per 5 minutes<br/>4XX errors &gt; 30 per 5 minutes"]
+      sns["SNS alarms topic"]
+      email["Email subscription"]
+    end
+  end
+
+  terraform["Terraform configuration<br/>Provisions infrastructure<br/>Uploads member images and seeds demo records"]
+
+  visitor -->|HTTPS| cloudfront
+  cloudfront -->|Default behavior: frontend assets| s3
+  cloudfront -.->|Configured with| oac
+  oac -.->|Signs S3 origin requests| s3
+  cloudfront -->|/members behavior over HTTPS| api
+  visitor -.->|Regional API URL is also directly reachable| api
+  api -->|AWS_PROXY; API Gateway invoke permission| lambda
+
+  subnetA -.->|Lambda VPC configuration| lambda
+  subnetB -.->|Lambda VPC configuration| lambda
+  lambdaSG -.->|Attached security group| lambda
+  privateRT -.->|Associated with both subnets| subnetA
+  privateRT -.->|Associated with both subnets| subnetB
+  privateRT -->|DynamoDB prefix-list route| ddbEndpoint
+  lambda -->|DynamoDB Scan| ddbEndpoint
+  ddbEndpoint -->|AWS service network| ddb
+  role -.->|Assumed by function| lambda
+  role -.->|IAM permission: Scan| ddb
+  lambda -->|Runtime logs| logs
+
+  api -->|API Gateway metrics| alarms
+  alarms -->|Alarm actions| sns
+  sns --> email
+
+  terraform -.->|Provisions distribution| cloudfront
+  terraform -.->|Uploads member images| s3
+  terraform -.->|Creates table and seed items| ddb
+
+  classDef edge fill:#FCE7EF,stroke:#A63864,color:#17243B,stroke-width:1.5px;
+  classDef compute fill:#F0EDFB,stroke:#7566A8,color:#17243B,stroke-width:1.5px;
+  classDef data fill:#E8F5F0,stroke:#538774,color:#17243B,stroke-width:1.5px;
+  classDef monitor fill:#FFF7E8,stroke:#A77B2F,color:#17243B,stroke-width:1.5px;
+  classDef note fill:#FAF7FC,stroke:#98A2B3,color:#17243B,stroke-dasharray:4 3;
+
+  class visitor,cloudfront,api edge;
+  class lambda,lambdaSG,role compute;
+  class s3,oac,ddb,ddbEndpoint data;
+  class logs,alarms,sns,email monitor;
+  class networkNote,terraform note;

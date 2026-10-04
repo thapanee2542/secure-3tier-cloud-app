@@ -1,0 +1,155 @@
+#!/bin/sh
+set -eu
+
+root_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+frontend_directory="$root_directory/fronend"
+lambda_directory="$root_directory/backend"
+infrastructure_directory="$root_directory/infrastructure"
+python_command=${PYTHON:-python3}
+lambda_python="$python_command"
+if [ -z "${PYTHON:-}" ] && [ -x "$lambda_directory/.venv/bin/python" ]; then
+    lambda_python="$lambda_directory/.venv/bin/python"
+fi
+
+require_ruff() {
+    if ! "$lambda_python" -m ruff --version >/dev/null 2>&1; then
+        printf '%s\n' 'Ruff is unavailable for the selected Python. Run ./tasks lambda-setup first.' >&2
+        exit 1
+    fi
+}
+
+show_tasks() {
+    printf '%s\n' \
+        'Project Tasks (Frontend / Backend / Infrastructure)' \
+        'Frontend directory: fronend/' \
+        'Backend directory: backend/ (AWS Lambda)' \
+        'Infrastructure directory: infrastructure/ (Terraform)' \
+        '' \
+        'Usage: ./tasks <task> [arguments]' \
+        '' \
+        'Frontend commands:' \
+        '  setup         Check prerequisites and install for first-time development' \
+        '  dev           Start the frontend development server' \
+        '  install       Install frontend dependencies from the lockfile' \
+        '  format-check  Check frontend formatting without changing files' \
+        '  format        Format frontend files in place' \
+        '  help          Show this task list' \
+        '' \
+        'Lambda commands:' \
+        '  lambda-setup         Create a local Python environment and install Ruff' \
+        '  lambda-test          Run local Python unit tests with mocked AWS services' \
+        '  lambda-format-check  Check Python formatting without changing files' \
+        '  lambda-format        Format Lambda source and tests in place' \
+        '  lambda-lint          Lint Lambda source and tests' \
+        '' \
+        'Terraform commands (short aliases also supported):' \
+        '  terraform-init        Initialize providers and local modules (init)' \
+        '  terraform-validate    Validate infrastructure configuration (validate)' \
+        '  terraform-fmt         Format Terraform files recursively (fmt)' \
+        '  terraform-fmt-check   Check formatting without changing files (fmt-check)' \
+        '  terraform-plan        Preview infrastructure changes (plan)' \
+        '  terraform-apply       Apply changes or a reviewed saved plan (apply)' \
+        '  terraform-destroy     Destroy the infrastructure (destroy)' \
+        '' \
+        'Hint: First time? Run ./tasks setup, then ./tasks dev.' \
+        'Hint: Open the URL printed by Vite. Press Ctrl+C to stop the server.' \
+        'Hint: Python tools? Run ./tasks lambda-setup. No AWS deployment is performed.' \
+        'Hint: Terraform? Run ./tasks init, then validate and plan before apply.' \
+        'Warning: apply and destroy change AWS resources; no auto-approval is added.' \
+        '' \
+        'Examples:' \
+        '  ./tasks setup' \
+        '  ./tasks dev' \
+        '  ./tasks dev --host 127.0.0.1 --port 5174' \
+        '  ./tasks format-check' \
+        '  ./tasks lambda-test' \
+        '  ./tasks lambda-lint' \
+        '  ./tasks terraform-plan -out=deploy.tfplan' \
+        '  ./tasks terraform-apply deploy.tfplan' \
+        '  ./tasks terraform-destroy'
+}
+
+task=${1:-help}
+if [ "$#" -gt 0 ]; then
+    shift
+fi
+
+case "$task" in
+    setup)
+        if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+            printf '%s\n' 'Install Node.js 20.19+ (or a newer LTS release) with npm, then run ./tasks setup again.' >&2
+            exit 1
+        fi
+        node -e '
+            const [major, minor] = process.versions.node.split(".").map(Number);
+            if (major < 20 || (major === 20 && minor < 19)) {
+                console.error("Node.js 20.19+ is required. Installed: " + process.versions.node);
+                process.exit(1);
+            }
+        '
+        npm --prefix "$frontend_directory" ci --include=dev "$@"
+        printf '\n%s\n' 'Setup complete. From the repository root, run: ./tasks dev'
+        ;;
+    dev)
+        exec npm --prefix "$frontend_directory" run dev -- "$@"
+        ;;
+    install)
+        exec npm --prefix "$frontend_directory" ci "$@"
+        ;;
+    format-check)
+        exec npm --prefix "$frontend_directory" run format:check -- "$@"
+        ;;
+    format)
+        exec npm --prefix "$frontend_directory" run format -- "$@"
+        ;;
+    lambda-setup)
+        if ! command -v "$python_command" >/dev/null 2>&1; then
+            printf '%s\n' 'Install Python 3.13, or set PYTHON to its executable path, then retry.' >&2
+            exit 1
+        fi
+        "$python_command" -m venv "$lambda_directory/.venv"
+        "$lambda_directory/.venv/bin/python" -m pip install -r "$lambda_directory/requirements-dev.txt" "$@"
+        printf '\n%s\n' 'Lambda setup complete. Run ./tasks lambda-test, lambda-format-check, or lambda-lint.'
+        ;;
+    lambda-test)
+        exec "$lambda_python" -m unittest discover -s "$lambda_directory/tests" -v "$@"
+        ;;
+    lambda-format-check)
+        require_ruff
+        exec "$lambda_python" -m ruff format --isolated --check --line-length 100 --target-version py313 "$lambda_directory" "$@"
+        ;;
+    lambda-format)
+        require_ruff
+        exec "$lambda_python" -m ruff format --isolated --line-length 100 --target-version py313 "$lambda_directory" "$@"
+        ;;
+    lambda-lint)
+        require_ruff
+        exec "$lambda_python" -m ruff check --isolated --select E4,E7,E9,F --target-version py313 "$lambda_directory" "$@"
+        ;;
+    terraform-init|init|terraform-validate|validate|terraform-fmt|fmt|terraform-fmt-check|fmt-check|terraform-plan|plan|terraform-apply|apply|terraform-destroy|destroy)
+        if ! command -v terraform >/dev/null 2>&1; then
+            printf '%s\n' 'Install Terraform >= 1.5.0 and < 2.0.0, then retry.' >&2
+            exit 1
+        fi
+        terraform_command=${task#terraform-}
+        case "$terraform_command" in
+            fmt)
+                exec terraform "-chdir=$infrastructure_directory" fmt -recursive "$@"
+                ;;
+            fmt-check)
+                exec terraform "-chdir=$infrastructure_directory" fmt -check -recursive "$@"
+                ;;
+            *)
+                exec terraform "-chdir=$infrastructure_directory" "$terraform_command" "$@"
+                ;;
+        esac
+        ;;
+    help|-h|--help)
+        show_tasks
+        ;;
+    *)
+        printf 'Unknown task: %s\n\n' "$task" >&2
+        show_tasks >&2
+        exit 1
+        ;;
+esac

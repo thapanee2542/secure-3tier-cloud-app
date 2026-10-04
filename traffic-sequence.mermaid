@@ -1,0 +1,104 @@
+%% Describes declared application and Terraform behavior, not a live AWS trace.
+sequenceDiagram
+    autonumber
+    actor Client as Client / Browser
+
+    box Public AWS delivery and API layer
+        participant CF as CloudFront
+        participant API as Regional API Gateway
+    end
+    box Private S3 origin
+        participant S3 as S3 frontend bucket
+    end
+    box VPC private networking
+        participant Lambda as Lambda get-members
+        participant Endpoint as DynamoDB Gateway endpoint
+    end
+    box AWS regional data service
+        participant DB as DynamoDB members table
+    end
+
+    Note over Client,DB: Static page and GET /members traffic<br/>No authentication or API key is configured for the member API
+
+    rect rgb(235, 245, 255)
+        Note over Client,S3: 1. Open the static website
+        opt Browser initially uses HTTP
+            Client->>CF: HTTP GET /
+            CF-->>Client: Redirect to HTTPS
+        end
+
+        loop index.html and required JS, CSS, images, or documents
+            Client->>CF: HTTPS GET / or /assets/{file}
+            Note over Client,CF: AWS-managed default CloudFront certificate<br/>Default root object is index.html
+            alt Valid cached static object
+                CF-->>Client: 200 static content from edge cache
+            else Cache miss or expired object
+                CF->>S3: HTTPS GetObject with OAC SigV4 signature
+                Note over CF,S3: Bucket policy permits CloudFront GetObject<br/>only for the configured distribution ARN
+                Note over S3: Public access blocked, bucket-owner-enforced ownership<br/>AES256 encryption at rest, insecure non-service requests denied
+                S3-->>CF: 200 static object
+                Note over CF: Cache according to object headers and configured TTL limits<br/>index.html uses no-cache/no-store, other build assets use immutable caching
+                CF-->>Client: 200 static content over HTTPS
+            end
+        end
+        Client->>Client: Execute React app and display static page
+    end
+
+    rect rgb(235, 250, 240)
+        Note over Client,DB: 2. User requests group members
+        Client->>Client: Click the load-members button
+        Client->>CF: HTTPS GET /members on the same website origin
+        Note over CF: /members behavior selects the API origin<br/>CloudFront API caching is disabled, viewer Host is not forwarded
+        CF->>API: HTTPS GET /{api_stage_name}/members<br/>TLS 1.2 to the regional API origin
+        Note over API: Public GET method: authorization NONE, no API key<br/>Throttle rate 2 requests/second, burst 5, API caching disabled
+
+        alt API request is throttled
+            API-->>CF: 429 Too Many Requests
+            CF-->>Client: 429 over HTTPS
+            Client->>Client: Display error and offer retry
+        else Request is accepted
+            API->>Lambda: AWS_PROXY invocation through AWS Lambda service<br/>GET maps to a POST integration invocation
+            Note over API,Lambda: Lambda permission is scoped to API ID, stage, GET, and /members<br/>Invocation is not inbound TCP traffic through the Lambda security group
+            Note over Lambda,Endpoint: Function uses private subnet VPC networking<br/>No NAT or Internet Gateway is declared, no inbound SG rules<br/>SG egress allows TCP 443 only to the DynamoDB managed prefix list
+
+            loop Scan pages until LastEvaluatedKey is absent
+                Lambda->>Endpoint: HTTPS DynamoDB Scan signed with execution-role credentials<br/>Use ExclusiveStartKey after the first page
+                Note over Endpoint: Gateway endpoint represents routing and policy enforcement<br/>It is not a proxy server or a separate application request
+                Note over Endpoint,DB: Endpoint policy permits the members table and execution role<br/>Role IAM policy allows only dynamodb:Scan on that table
+                Endpoint->>DB: Route the signed request through the AWS service network
+                Note over DB: DynamoDB evaluates IAM authorization<br/>Server-side encryption and point-in-time recovery are enabled
+                DB-->>Endpoint: Items and optional LastEvaluatedKey, or an error
+                Endpoint-->>Lambda: Return the DynamoDB response
+            end
+
+            alt Scan and JSON serialization succeed
+                Lambda->>Lambda: Add CloudFront /images/{studentId}.jpg URLs<br/>Convert Decimal values to JSON numbers
+                Lambda-->>API: Proxy response: 200 and JSON member array
+                API-->>CF: 200 application/json
+                CF-->>Client: 200 JSON over HTTPS, no API edge cache
+                Client->>Client: Render member names, IDs, and image URLs
+            else Table access, scan, or serialization fails
+                Lambda-->>API: Proxy response: 500 with generic error message<br/>Internal details remain in runtime logs
+                API-->>CF: 500 application/json
+                CF-->>Client: 500 over HTTPS
+                Client->>Client: Display error and offer retry
+            end
+        end
+    end
+
+    rect rgb(255, 247, 230)
+        Note over Client,S3: 3. Load member photos after a successful API response
+        loop Each visible member photo
+            Client->>CF: HTTPS GET /images/{studentId}.jpg
+            alt Valid cached member photo
+                CF-->>Client: 200 image from edge cache
+            else Cache miss or expired photo
+                CF->>S3: HTTPS GetObject with OAC SigV4 signature
+                S3-->>CF: 200 image, Cache-Control public,max-age=3600
+                CF-->>Client: 200 image over HTTPS
+            end
+        end
+    end
+
+    Note over Client,API: The execute-api URL is also publicly reachable over HTTPS<br/>CloudFront is not an authentication boundary, direct callers can bypass the CDN
+    Note over Client,S3: Anonymous direct S3 reads are denied by the configured bucket controls<br/>IAM permissions still govern authorized administrative access

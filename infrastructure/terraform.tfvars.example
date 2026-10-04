@@ -1,0 +1,17 @@
+# เลือก AWS CLI profile ที่มี credentials สำหรับ deploy โดยไม่ใส่ secret ในไฟล์นี้
+aws_profile        = "personal"
+# เลือก AWS region ที่จะสร้าง resources ของโปรเจกต์
+aws_region         = "ap-southeast-7"
+# ใช้ชื่อนี้เป็น prefix ของ resource names และ project tags
+project_name       = "secure-3tier"
+# ระบุ environment เช่น dev หรือ prod แต่ไม่ได้แยก state ให้อัตโนมัติ
+environment        = "dev"
+# กำหนด stage ของ API ที่ CloudFront และ Lambda permission ใช้อ้างอิง
+api_stage_name     = "dev"
+# กำหนดผู้รับ alarm notifications ซึ่งต้องยืนยัน SNS email subscription
+notification_email = "you@example.com"
+
+# เปิดการสร้าง Lambda log group โดย Terraform และดูแล retention ตามค่าของโมดูล
+enable_cloudwatch_logs   = true
+# เปิดทั้ง API alarms และ SNS/KMS ที่ใช้ส่ง notifications; ปิดอาจลบ resource เดิม
+enable_cloudwatch_alarms = true
