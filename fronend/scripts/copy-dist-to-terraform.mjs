@@ -8,8 +8,8 @@ const terraformDirectory = path.resolve(
   frontendDirectory,
   '..',
   '..',
-  'secure-3tier-infrastrcuture',
-  'terraform',
+  'secure-3tier-cloud-app',
+  'infrastructure',
 );
 const destinationDirectory = path.join(terraformDirectory, 'dist');
 

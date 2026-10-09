@@ -27,7 +27,7 @@ const PdfViewer = lazy(() => import('./PdfViewer.jsx'));
 const PdfPagePreview = lazy(() => import('./PdfViewer.jsx').then((module) => ({ default: module.PdfPagePreview })));
 
 const membersEndpoint = '/members';
-const githubUrl = 'https://github.com/thapanee2542/secure-3tier-infrastrcuture.git';
+const githubUrl = 'https://github.com/thapanee2542/secure-3tier-cloud-app.git';
 
 const documents = [
   {
@@ -95,17 +95,98 @@ function DeferredPdfPreview({ document, onOpen }) {
 }
 
 function observeActiveSection(onActiveSectionChange) {
-  const sections = ['architecture', 'features', 'reports', 'members']
-    .map((id) => document.getElementById(id))
-    .filter(Boolean);
-  const observer = new IntersectionObserver((entries) => {
-    const visibleSection = entries
-      .filter((entry) => entry.isIntersecting)
-      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-    if (visibleSection) onActiveSectionChange(visibleSection.target.id);
-  }, { rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.2, 0.5] });
-  sections.forEach((section) => observer.observe(section));
-  return () => observer.disconnect();
+  const sectionIds = ['architecture', 'features', 'members'];
+  let clickedSection = null;
+  let releaseTimer;
+
+  const updateActiveSection = () => {
+    // ระหว่างเลื่อนไปยังเมนูที่กด ให้คงสีเมนูนั้นไว้
+    if (clickedSection) return;
+
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    if (!sections.length) return;
+
+    const pageHeight = document.documentElement.scrollHeight;
+    const canScroll = pageHeight > window.innerHeight;
+    const isAtBottom =
+      window.scrollY + window.innerHeight >= pageHeight - 4;
+
+    // Members อยู่ท้ายหน้า อาจเลื่อนขึ้นไปถึงด้านบนไม่ได้
+    if (canScroll && isAtBottom) {
+      onActiveSectionChange(sections[sections.length - 1].id);
+      return;
+    }
+
+    const header = document.querySelector('.site-header');
+    const activationLine =
+      Math.max(0, header?.getBoundingClientRect().bottom ?? 0) + 32;
+
+    let currentSection = sections[0].id;
+
+    for (const section of sections) {
+      if (section.getBoundingClientRect().top <= activationLine) {
+        currentSection = section.id;
+      }
+    }
+
+    onActiveSectionChange(currentSection);
+  };
+
+  const releaseClickedSection = () => {
+    clickedSection = null;
+  };
+
+  const onScroll = () => {
+    if (clickedSection) {
+      clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(releaseClickedSection, 180);
+      return;
+    }
+
+    updateActiveSection();
+  };
+
+  const onClick = (event) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    const link = event.target.closest('a[href^="#"]');
+    const sectionId = link?.getAttribute('href')?.slice(1);
+
+    if (!sectionIds.includes(sectionId)) return;
+
+    clickedSection = sectionId;
+    onActiveSectionChange(sectionId);
+
+    clearTimeout(releaseTimer);
+
+    // กรณีกดเมนูของ section ที่อยู่ตรงนั้นแล้ว ไม่มี scroll เกิดขึ้น
+    releaseTimer = window.setTimeout(releaseClickedSection, 1200);
+  };
+
+  document.addEventListener('click', onClick);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', updateActiveSection);
+
+  updateActiveSection();
+
+  return () => {
+    clearTimeout(releaseTimer);
+    document.removeEventListener('click', onClick);
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', updateActiveSection);
+  };
 }
 
 function App() {
@@ -269,8 +350,7 @@ function App() {
         </button>
         <nav id="main-navigation" className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="เมนูหลัก">
           <a className={activeSection === 'architecture' ? 'is-active' : ''} aria-current={activeSection === 'architecture' ? 'location' : undefined} href="#architecture" onClick={closeMenu}>Architecture</a>
-          <a className={activeSection === 'features' ? 'is-active' : ''} aria-current={activeSection === 'features' ? 'location' : undefined} href="#features" onClick={closeMenu}>Key features</a>
-          <a className={activeSection === 'reports' ? 'is-active' : ''} aria-current={activeSection === 'reports' ? 'location' : undefined} href="#reports" onClick={closeMenu}>Security report</a>
+          <a className={activeSection === 'features' ? 'is-active' : ''} aria-current={activeSection === 'features' ? 'location' : undefined} href="#features" onClick={closeMenu}>Key Features &amp; Security Report</a>
           <a className={activeSection === 'members' ? 'is-active' : ''} aria-current={activeSection === 'members' ? 'location' : undefined} href="#members" onClick={closeMenu}>Members</a>
         </nav>
         <a className="github-link" href={githubUrl} target="_blank" rel="noreferrer" aria-label="เปิด GitHub repository">
@@ -287,7 +367,7 @@ function App() {
             <p className="hero-description">Secure 3-Tier Web Application on Cloud</p>
             <div className="hero-actions">
               <a className="button button-dark" href="#architecture">สำรวจสถาปัตยกรรม <ArrowDownRight size={17} /></a>
-              <a className="text-link" href="#reports">อ่านรายงาน <ArrowUpRight size={15} /></a>
+              <a className="text-link" href="#features">อ่านรายงาน <ArrowUpRight size={15} /></a>
             </div>
             <div className="hero-meta"><span>รายวิชา 070315221</span><span>มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</span></div>
           </div>
@@ -320,17 +400,41 @@ function App() {
             </div>
             <p>เอกสารประกอบโครงงาน</p>
           </div>
+
           <div className="document-grid">
             {documents.map((document, index) => (
-              <article className="document-card" id={index === 1 ? 'reports' : undefined} key={document.number}>
-                <DeferredPdfPreview document={document} onOpen={() => openDocument(document)} />
+              <article className="document-card" key={document.number}>
+                <DeferredPdfPreview
+                  document={document}
+                  onOpen={() => openDocument(document)}
+                />
+
                 <div className="document-copy">
-                  <span className="document-kicker"><FileText size={15} /> {index === 0 ? 'KEY FEATURES' : 'SECURITY REPORT'}</span>
+                  <span className="document-kicker">
+                    <FileText size={15} />
+                    {index === 0 ? 'KEY FEATURES' : 'SECURITY REPORT'}
+                  </span>
+
                   <h3>{document.title}</h3>
                   <p>{document.description}</p>
+
                   <div className="document-actions">
-                    <button className="button button-primary" type="button" onClick={() => openDocument(document)}>เปิดอ่าน <ArrowUpRight size={15} /></button>
-                    <a className="download-link" href={document.file} download={document.fileName} aria-label={`ดาวน์โหลด ${document.title}`}><ArrowDownRight size={16} /> ดาวน์โหลด</a>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      onClick={() => openDocument(document)}
+                    >
+                      เปิดอ่าน <ArrowUpRight size={15} />
+                    </button>
+
+                    <a
+                      className="download-link"
+                      href={document.file}
+                      download={document.fileName}
+                      aria-label={`ดาวน์โหลด ${document.title}`}
+                    >
+                      <ArrowDownRight size={16} /> ดาวน์โหลด
+                    </a>
                   </div>
                 </div>
               </article>

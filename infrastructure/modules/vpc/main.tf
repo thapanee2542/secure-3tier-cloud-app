@@ -133,7 +133,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
 
       # อนุญาตให้อ่านรายการในตารางด้วย Scan
       # และอ่านรายการตามคีย์ด้วย GetItem
-      Action = ["dynamodb:Scan", "dynamodb:GetItem"]
+      Action = ["dynamodb:Scan"]
 
       # ใช้ได้เฉพาะตารางที่ระบุ ARN นี้
       Resource = var.table_arn

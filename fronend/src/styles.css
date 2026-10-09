@@ -168,7 +168,7 @@ img { max-width: 100%; }
 .modal-canvas.is-dragging { cursor: grabbing; user-select: none; }
 .modal-canvas img { display: block; flex: 0 0 auto; max-width: none; object-fit: contain; user-select: none; -webkit-user-drag: none; transition: width 140ms ease-out; }
 .pdf-viewer { z-index: 31; }
-.pdf-toolbar { position: absolute; inset: 0 0 auto; z-index: 2; min-height: 58px; padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; background: #17243b; }
+.pdf-toolbar { position: absolute; inset: 0 0 auto; z-index: 2; min-height: 58px; padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; background: var(--pink-strong); }
 .pdf-title, .pdf-controls { display: flex; align-items: center; gap: 9px; }
 .pdf-title { min-width: 0; font-size: 13px; font-weight: 500; }
 .pdf-title > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -176,7 +176,7 @@ img { max-width: 100%; }
 .pdf-controls .icon-button { width: 44px; height: 44px; color: #fff; }
 .pdf-controls .icon-button:disabled { opacity: .35; cursor: default; }
 .pdf-controls output { min-width: 88px; color: #f8eaf0; text-align: center; font-size: 10px; white-space: nowrap; }
-.pdf-canvas { position: absolute; inset: 58px 0 0; overflow: auto; padding: 18px 20px 32px; display: flex; justify-content: center; align-items: flex-start; background: #343c49; }
+.pdf-canvas { position: absolute; inset: 58px 0 0; overflow: auto; padding: 18px 20px 32px; display: flex; justify-content: center; align-items: flex-start; background: var(--pink-soft); }
 .pdf-canvas .react-pdf__Document { display: contents; }
 .pdf-canvas .react-pdf__Page { max-width: 100%; background: white; box-shadow: 0 12px 34px #0005; }
 .pdf-canvas .react-pdf__Page canvas { display: block; max-width: 100%; height: auto !important; }

@@ -30,6 +30,7 @@ show_tasks() {
         'Frontend commands:' \
         '  setup         Check prerequisites and install for first-time development' \
         '  dev           Start the frontend development server' \
+        '  build         Build the frontend for production' \
         '  install       Install frontend dependencies from the lockfile' \
         '  format-check  Check frontend formatting without changing files' \
         '  format        Format frontend files in place' \
@@ -60,6 +61,7 @@ show_tasks() {
         'Examples:' \
         '  ./tasks setup' \
         '  ./tasks dev' \
+        '  ./tasks build' \
         '  ./tasks dev --host 127.0.0.1 --port 5174' \
         '  ./tasks format-check' \
         '  ./tasks lambda-test' \
@@ -93,6 +95,9 @@ case "$task" in
     dev)
         exec npm --prefix "$frontend_directory" run dev -- "$@"
         ;;
+    build)
+    exec npm --prefix "$frontend_directory" run build -- "$@"
+    ;;
     install)
         exec npm --prefix "$frontend_directory" ci "$@"
         ;;

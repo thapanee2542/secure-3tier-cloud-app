@@ -19,7 +19,7 @@ resource "aws_cloudwatch_log_group" "lambda" {
   name = "/aws/lambda/get-members"
 
   # เก็บแต่ละ log event ไว้ 3 วัน แล้วลบอัตโนมัติ
-  retention_in_days = 3
+  retention_in_days = 1
 }
 
 # แจ้งเตือนเมื่อ API ได้รับ requests มากผิดปกติ
