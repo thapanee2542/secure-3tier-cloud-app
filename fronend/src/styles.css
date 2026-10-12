@@ -96,7 +96,20 @@ img { max-width: 100%; }
 .diagram-toolbar { min-height: 34px; padding: 0 5px 8px; display: flex; justify-content: flex-end; align-items: center; color: var(--muted); font-size: 10px; }
 .diagram-toolbar > span { display: inline-flex; align-items: center; gap: 7px; }
 .diagram-expand { position: absolute; right: 20px; bottom: 20px; min-height: 40px; padding: 0 14px; display: flex; gap: 7px; align-items: center; border-radius: var(--radius-control); background: var(--surface); color: var(--pink-strong); box-shadow: 0 3px 12px #1018202a; font-size: 11px; font-weight: 600; }
+.logo {
+  font-size: 100px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 2.0;
+}
 
+.edu {
+  color: #a63866;
+}
+
+.nova {
+  color: #17243b;
+}
 .documents-section { padding-top: 54px; padding-bottom: 58px; }
 .documents-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 21px; }
 .documents-heading .eyebrow { margin-bottom: 6px; }

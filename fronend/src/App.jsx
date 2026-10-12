@@ -3,6 +3,7 @@ import diagramImage from '../file/diagram.svg';
 import githubLogo from '../file/github-logo.png';
 import keyFeaturesPdf from '../file/key-features.pdf';
 import kmutnbLogo from '../file/kmutnb-logo.png';
+import eduNovaLogo from '../file/edu-nova-logo.png';
 import securityReportPdf from '../file/security-design-report.pdf';
 import {
   ArrowDownRight,
@@ -32,14 +33,14 @@ const githubUrl = 'https://github.com/thapanee2542/secure-3tier-cloud-app.git';
 const documents = [
   {
     number: 'A',
-    title: 'Key Features',
+    title: 'Presentation',
     description: 'ภาพรวมคุณสมบัติและองค์ประกอบของเว็บแอปพลิเคชัน',
     file: keyFeaturesPdf,
     fileName: 'key-features.pdf',
   },
   {
     number: 'B',
-    title: 'Security Design Report',
+    title: 'Report',
     description: 'รายละเอียดการออกแบบระบบและแนวทางด้านความปลอดภัย',
     file: securityReportPdf,
     fileName: 'security-design-report.pdf',
@@ -332,10 +333,10 @@ function App() {
     <>
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Cloud Security, กลับไปหน้าแรก" onClick={closeMenu}>
-          <img src={kmutnbLogo} alt="ตรามหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ" />
+          <img src={eduNovaLogo} alt="ตรามหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ" />
           <span className="brand-copy">
-            <strong>Cloud Security</strong>
-            <span>070315221 <i /> TERM PROJECT</span>
+            <strong>EduNova</strong>
+            <span>EDUCATION <i /> BLOGGER</span>
           </span>
         </a>
         <button
@@ -350,7 +351,7 @@ function App() {
         </button>
         <nav id="main-navigation" className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="เมนูหลัก">
           <a className={activeSection === 'architecture' ? 'is-active' : ''} aria-current={activeSection === 'architecture' ? 'location' : undefined} href="#architecture" onClick={closeMenu}>Architecture</a>
-          <a className={activeSection === 'features' ? 'is-active' : ''} aria-current={activeSection === 'features' ? 'location' : undefined} href="#features" onClick={closeMenu}>Key Features &amp; Security Report</a>
+          <a className={activeSection === 'features' ? 'is-active' : ''} aria-current={activeSection === 'features' ? 'location' : undefined} href="#features" onClick={closeMenu}>Documents</a>
           <a className={activeSection === 'members' ? 'is-active' : ''} aria-current={activeSection === 'members' ? 'location' : undefined} href="#members" onClick={closeMenu}>Members</a>
         </nav>
         <a className="github-link" href={githubUrl} target="_blank" rel="noreferrer" aria-label="เปิด GitHub repository">
@@ -363,13 +364,10 @@ function App() {
         <section className="hero section-wrap">
           <div className="hero-copy">
             <div className="hero-label"><Cloud size={15} /> Cloud Security Project</div>
-            <h1>ออกแบบเว็บให้ปลอดภัย<br /><em>ตั้งแต่โครงสร้าง</em></h1>
+            <h1 className="logo">
+              <span className="edu">Edu</span><span className="nova">Nova</span>
+            </h1>
             <p className="hero-description">Secure 3-Tier Web Application on Cloud</p>
-            <div className="hero-actions">
-              <a className="button button-dark" href="#architecture">สำรวจสถาปัตยกรรม <ArrowDownRight size={17} /></a>
-              <a className="text-link" href="#features">อ่านรายงาน <ArrowUpRight size={15} /></a>
-            </div>
-            <div className="hero-meta"><span>รายวิชา 070315221</span><span>มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ</span></div>
           </div>
           <div className="hero-art" aria-label="สรุปสถาปัตยกรรมระบบสามชั้น">
             <div className="art-topline"><span>PROJECT OVERVIEW</span><span>THREE-TIER ARCHITECTURE</span></div>
@@ -396,7 +394,7 @@ function App() {
           <div className="documents-heading">
             <div>
               <span className="eyebrow">PROJECT DOCUMENTS</span>
-              <h2>Key Features &amp; Security Report</h2>
+              <h2>Documents</h2>
             </div>
             <p>เอกสารประกอบโครงงาน</p>
           </div>
@@ -473,9 +471,8 @@ function App() {
 
       <footer className="site-footer">
         <div className="section-wrap footer-inner">
-          <div className="footer-brand"><img src={kmutnbLogo} alt="" /><span>KMUTNB <i /> CLOUD SECURITY</span></div>
+          <div className="footer-brand"><img src={kmutnbLogo} alt="" /><span>มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ <i /> CLOUD SECURITY</span></div>
           <p>Secure 3-Tier Web Application on Cloud</p>
-          <a href={githubUrl} target="_blank" rel="noreferrer">VIEW SOURCE <ArrowUpRight size={14} /></a>
         </div>
       </footer>
 

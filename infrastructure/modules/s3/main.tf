@@ -12,7 +12,7 @@ terraform {
 resource "aws_s3_bucket" "frontend" {
   # รวมชื่อโปรเจกต์ environment account และ region เพื่อลดโอกาสชื่อซ้ำ
   # ชื่อ S3 bucket ต้องไม่ซ้ำกับ bucket ของผู้อื่นใน AWS partition เดียวกัน
-  bucket = "${var.project_name}-${var.environment}-${var.account_id}-${var.aws_region}"
+  bucket = "${var.project_name}-bucket"
 
   # ไม่ลบไฟล์ทั้งหมดให้อัตโนมัติเมื่อ destroy bucket
   # แต่ไฟล์ที่ Terraform จัดการผ่าน aws_s3_object ยังถูกลบเมื่อ destroy ได้
